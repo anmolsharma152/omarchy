@@ -119,6 +119,15 @@ set_theme() {
       ! "$editor_cmd" --list-extensions 2>/dev/null | grep -Fxq "$extension"; then
       "$editor_cmd" --install-extension "$extension" >/dev/null 2>&1
     fi
+
+    # If the 3rd-party extension is not available or failed to install (e.g. Open VSX / Cursor proxy),
+    # fallback to the guaranteed local generated Omarchy theme.
+    if [[ -n "$extension" ]] && ! "$editor_cmd" --list-extensions 2>/dev/null | grep -Fxq "$extension"; then
+      if [[ -f "$GENERATED_THEME" ]]; then
+        install_generated_extension "$ext_base/$GENERATED_EXTENSION_NAME"
+        theme_name="Omarchy"
+      fi
+    fi
   elif [[ -f "$GENERATED_THEME" ]]; then
     # VS Code only discovers local color themes through an extension package.
     install_generated_extension "$ext_base/$GENERATED_EXTENSION_NAME"
