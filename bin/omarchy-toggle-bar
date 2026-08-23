@@ -1,7 +1,13 @@
 #!/bin/bash
+# Toggle bar visibility in Omarchy Quickshell
 
-# omarchy:summary=Toggle bar visibility without killing the Omarchy shell
-# omarchy:args=[toggle|on|off]
-# omarchy:examples=omarchy toggle bar | omarchy toggle bar off | omarchy toggle bar on
-
-omarchy-toggle bar-off "${1:-toggle}"
+mkdir -p "$HOME/.local/state/omarchy/toggles"
+FLAG="$HOME/.local/state/omarchy/toggles/bar-off"
+if [[ -f "$FLAG" ]]; then
+  rm -f "$FLAG"
+  omarchy-notification-send -g 󰛖 "Top Bar Visible" -t 1500 2>/dev/null || true
+else
+  touch "$FLAG"
+  omarchy-notification-send -g 󰛖 "Top Bar Hidden" -t 1500 2>/dev/null || true
+fi
+touch "$HOME/.local/state/omarchy/toggles"

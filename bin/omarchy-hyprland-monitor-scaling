@@ -4,7 +4,7 @@
 # omarchy:args=[up|down|SCALE]
 # omarchy:examples=omarchy hyprland monitor scaling | omarchy hyprland monitor scaling 1.6 | omarchy hyprland monitor scaling up | omarchy hyprland monitor scaling down
 
-SCALES=(1 1.25 1.6 2 3 4)
+SCALES=(1 1.25 1.6 2)
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy"
 SCALE_LOG="$STATE_DIR/monitor-scaling.log"
 
@@ -154,7 +154,7 @@ scale_from_current() {
       }
 
       if (direction == "next") {
-        print scales[(best < n ? best + 1 : n)]
+        print scales[(best < n ? best + 1 : 1)]
       } else if (direction == "previous") {
         print scales[(best > 1 ? best - 1 : 1)]
       } else {
@@ -180,12 +180,12 @@ down)
   set_scale "$(echo "$monitor_info" | jq -r '.scale' | scale_from_current previous \
     "$(echo "$monitor_info" | jq -r '.width')" "$(echo "$monitor_info" | jq -r '.height')")" "down"
   ;;
-1 | 1.25 | 1.6 | 2 | 3 | 4)
+1 | 1.25 | 1.6 | 2)
   set_scale "$1" "$1"
   ;;
 *)
   if [[ $1 =~ ^[0-9]+([.][0-9]+)?$ ]] &&
-    awk -v scale="$1" 'BEGIN { exit !(scale >= 1 && scale <= 4) }'; then
+    awk -v scale="$1" 'BEGIN { exit !(scale >= 1 && scale <= 2) }'; then
     set_scale "$1" "$1"
   else
     usage >&2

@@ -37,6 +37,11 @@ function shouldBypassDnd(notification, criticalUrgency) {
   return appName === "notify-send" && notification && notification.urgency === criticalUrgency
 }
 
+function isMutedApp(appName) {
+  var name = String(appName || "").toLowerCase()
+  return name === "antigravity"
+}
+
 function isEphemeralApp(appName) {
   var name = String(appName || "")
   return name === "notify-send" || name === "omarchy-action"
@@ -339,6 +344,7 @@ function historyRows(raw, liveRows, normalUrgency, limit) {
 
 if (typeof module !== "undefined") {
   module.exports = {
+    isMutedApp: isMutedApp,
     isChromiumDerived: isChromiumDerived,
     sanitizeBody: sanitizeBody,
     summaryStartsWithGlyph: summaryStartsWithGlyph,

@@ -1,0 +1,31 @@
+#!/bin/bash
+# Cycle global text size presets: 12px (default) -> 14px -> 16px -> 18px -> 10px -> 12px
+
+PRESETS=(12 14 16 18 10)
+TOTAL=${#PRESETS[@]}
+
+cur_str=$(omarchy-display-text-size 2>/dev/null | grep -oP 'text size:\s*\K[0-9]+' | head -1)
+cur=${cur_str:-12}
+
+idx=-1
+for i in "${!PRESETS[@]}"; do
+  if (( PRESETS[i] == cur )); then
+    idx=$i
+    break
+  fi
+done
+
+if (( idx == -1 )); then
+  new_size=12
+else
+  next_idx=$(((idx + 1) % TOTAL))
+  new_size=${PRESETS[$next_idx]}
+fi
+
+if (( new_size == 12 )); then
+  omarchy-display-text-size reset
+  omarchy-notification-send -g 󰛖 "Text Size: 12px (Default)" -t 1500
+else
+  omarchy-display-text-size "$new_size"
+  omarchy-notification-send -g 󰛖 "Text Size: ${new_size}px" -t 1500
+fi

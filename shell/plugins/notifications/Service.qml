@@ -154,6 +154,11 @@ Item {
   }
 
   function handleNotification(notification) {
+    if (NotificationLogic.isMutedApp(notification.appName)) {
+      notification.tracked = false
+      return
+    }
+
     // Without `tracked = true` the Notification object is destroyed as soon
     // as this signal handler returns, which would null out the `ref` we just
     // captured for the popup card.

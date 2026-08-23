@@ -937,15 +937,26 @@ Item {
   // and the flag is created/removed by `omarchy-toggle-bar`.
   Process {
     id: barHiddenProbe
-    running: true
+    running: false
     command: ["bash", "-c", "[[ -f $HOME/.local/state/omarchy/toggles/bar-off ]] && echo yes || echo no"]
-    stdout: SplitParser { onRead: function(line) { root.barHidden = String(line).trim() === "yes" } }
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: {
+        root.barHidden = text.trim() === "yes"
+      }
+    }
   }
+
+  function probeBarHidden() {
+    barHiddenProbe.running = false
+    barHiddenProbe.running = true
+  }
+
   FileView {
     path: root.home + "/.local/state/omarchy/toggles"
     watchChanges: true
     printErrors: false
-    onFileChanged: barHiddenProbe.running = true
+    onFileChanged: root.probeBarHidden()
   }
 
   Variants {
