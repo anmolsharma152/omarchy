@@ -59,6 +59,11 @@ ipc_timeout=${OMARCHY_SHELL_IPC_TIMEOUT:-2s}
 output=$(timeout --kill-after=1s "$ipc_timeout" qs ipc -n -p "$OMARCHY_PATH/shell" call -- "$@" 2>/dev/null)
 ipc_status=$?
 
+if (( ipc_status != 0 && ipc_status != 124 && ipc_status != 137 )) && [[ $OMARCHY_PATH != "/usr/share/omarchy" ]]; then
+  output=$(timeout --kill-after=1s "$ipc_timeout" qs ipc -n -p "/usr/share/omarchy/shell" call -- "$@" 2>/dev/null)
+  ipc_status=$?
+fi
+
 if (( ipc_status == 124 || ipc_status == 137 )); then
   fail "omarchy-shell is not responding"
 elif (( ipc_status != 0 )); then
