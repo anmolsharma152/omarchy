@@ -39,6 +39,10 @@ refresh_running_browser chrome google-chrome-stable || refresh_running_browser c
 set_browser_policy /etc/opt/edge/policies/managed
 refresh_running_browser msedge microsoft-edge-stable
 
+set_browser_policy /etc/vivaldi/policies/managed
+set_browser_policy /etc/opt/vivaldi/policies/managed
+refresh_running_browser vivaldi vivaldi-stable || refresh_running_browser vivaldi vivaldi
+
 set_browser_policy /etc/brave/policies/managed
 refresh_running_browser brave brave
 # Match on the binary path: the running process is named plain "brave", and a
