@@ -1,0 +1,57 @@
+#!/bin/bash
+# Automated Media Playback Idle Inhibitor (Auto-Caffeine) for Omarchy
+# Combines Linux MPRIS player status with PipeWire Pulse streams for precision detection.
+
+has_active_audio() {
+  # 1. Check if any MPRIS player (CLIAMP, Spotify, Chromium, VLC, MPV) is actively "Playing"
+  if playerctl -a status 2>/dev/null | grep -q "^Playing$"; then
+    return 0
+  fi
+
+  # 2. Check for active PipeWire Pulse audio streams (e.g. web tabs, games, Discord)
+  # Excludes raw ALSA device holders, Electron IDE audio contexts, and keyboard sound daemons
+  pw-dump 2>/dev/null | jq -e '
+    .[] | select(
+      .type == "PipeWire:Interface:Node" and
+      .info.props["media.class"] == "Stream/Output/Audio" and
+      .info.state == "running" and
+      .info.props["client.api"] == "pipewire-pulse" and
+      (.info.props["application.process.binary"] != "antigravity" and
+       .info.props["application.process.binary"] != "code" and
+       .info.props["application.process.binary"] != "cursor" and
+       .info.props["application.process.binary"] != "wayvibes" and
+       .info.props["application.process.binary"] != "wayvibes-daemon" and
+       .info.props["application.process.binary"] != "mechvibes" and
+       .info.props["application.name"] != "wayvibes" and
+       .info.props["application.name"] != "Mechvibes" and
+       .info.props["application.name"] != "Antigravity")
+    )' >/dev/null 2>&1
+}
+
+is_stay_awake() {
+  [[ -f "$HOME/.local/state/omarchy/indicators/stay-awake" ]]
+}
+
+consecutive_idle=0
+GRACE_SECONDS=5
+
+while true; do
+  if has_active_audio; then
+    consecutive_idle=0
+    if ! is_stay_awake; then
+      omarchy-toggle-idle stay-awake >/dev/null 2>&1 || true
+    fi
+  else
+    if is_stay_awake; then
+      ((consecutive_idle++))
+      # Require 5 consecutive seconds of silence before releasing Stay Awake
+      if (( consecutive_idle >= GRACE_SECONDS )); then
+        omarchy-toggle-idle allow-idle >/dev/null 2>&1 || true
+        consecutive_idle=0
+      fi
+    else
+      consecutive_idle=0
+    fi
+  fi
+  sleep 1
+done

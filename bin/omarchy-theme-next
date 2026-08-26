@@ -1,0 +1,26 @@
+#!/bin/bash
+# Cycle to the next theme in Omarchy
+
+mapfile -t THEMES < <(omarchy-theme-list)
+TOTAL=${#THEMES[@]}
+
+if (( TOTAL == 0 )); then
+  omarchy-notification-send "No themes found" -t 2000
+  exit 1
+fi
+
+CURRENT_THEME=$(omarchy-theme-current)
+
+INDEX=-1
+for i in "${!THEMES[@]}"; do
+  if [[ "${THEMES[$i]}" == "$CURRENT_THEME" ]]; then
+    INDEX=$i
+    break
+  fi
+done
+
+NEXT_INDEX=$(((INDEX + 1) % TOTAL))
+NEXT_THEME="${THEMES[$NEXT_INDEX]}"
+
+omarchy-theme-set "$NEXT_THEME"
+omarchy-notification-send -g 󰔎 "Theme Switched" "$NEXT_THEME" -t 2000
