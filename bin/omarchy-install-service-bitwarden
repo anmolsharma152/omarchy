@@ -23,9 +23,6 @@ install_chromium_extension() {
 echo "Installing Bitwarden Desktop..."
 omarchy-pkg-add bitwarden
 
-echo "Installing Bitwarden CLI (bw) via mise..."
-mise use -g "npm:@bitwarden/cli@latest" 2>/dev/null || true
-
 echo "Installing Bitwarden extension for Chromium..."
 install_chromium_extension
 
