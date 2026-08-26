@@ -3,8 +3,10 @@
 
 set -e
 
-if omarchy-cmd-present bitwarden; then
-  exec setsid uwsm-app -- bitwarden
+if omarchy-cmd-present bitwarden-desktop; then
+  exec setsid uwsm-app -- bitwarden-desktop "$@"
+elif omarchy-cmd-present bitwarden; then
+  exec setsid uwsm-app -- bitwarden "$@"
 else
   exec omarchy-launch-floating-terminal-with-presentation omarchy-install-service-bitwarden
 fi
