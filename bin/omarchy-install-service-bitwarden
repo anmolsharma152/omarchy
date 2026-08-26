@@ -20,8 +20,11 @@ install_chromium_extension() {
   sudo chmod 644 "$EXTENSION_FILE"
 }
 
-echo "Installing Bitwarden..."
-omarchy-pkg-add bitwarden bitwarden-cli
+echo "Installing Bitwarden Desktop..."
+omarchy-pkg-add bitwarden
+
+echo "Installing Bitwarden CLI (bw) via mise..."
+mise use -g "npm:@bitwarden/cli@latest" 2>/dev/null || true
 
 echo "Installing Bitwarden extension for Chromium..."
 install_chromium_extension

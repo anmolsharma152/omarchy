@@ -8,6 +8,7 @@ EXTENSION_FILE="/usr/share/chromium/extensions/nngceckbapebfimnlniiiahkandclblb.
 
 sudo rm -f "$EXTENSION_FILE"
 
-omarchy-pkg-drop bitwarden bitwarden-cli
+omarchy-pkg-drop bitwarden
+mise uninstall "npm:@bitwarden/cli" 2>/dev/null || true
 
 echo "Bitwarden has been removed."
