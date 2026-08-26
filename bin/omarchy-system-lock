@@ -10,8 +10,14 @@ omarchy-shell lock lock >/dev/null
 # Set keyboard layout to default (first layout)
 hyprctl switchxkblayout all 0 > /dev/null 2>&1
 
-# Ensure 1password is locked. Use timeout because `1password --lock` can
-# otherwise leave a full Electron helper tree running after each lock.
+# Ensure password manager is locked
+if pgrep -x "bitwarden" >/dev/null && omarchy-cmd-present bw; then
+  (
+    flock -n 9 || exit 0
+    timeout --kill-after=1s 3s bw lock >/dev/null 2>&1 || true
+  ) 9>"${XDG_RUNTIME_DIR:-/tmp}/omarchy-bitwarden-lock.lock" &
+fi
+
 if pgrep -x "1password" >/dev/null && omarchy-cmd-present 1password; then
   (
     flock -n 9 || exit 0

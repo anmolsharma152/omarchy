@@ -1,0 +1,13 @@
+#!/bin/bash
+# omarchy:summary=Remove Bitwarden and its Chromium extension.
+# omarchy:requires-sudo=true
+
+set -e
+
+EXTENSION_FILE="/usr/share/chromium/extensions/nngceckbapebfimnlniiiahkandclblb.json"
+
+sudo rm -f "$EXTENSION_FILE"
+
+omarchy-pkg-drop bitwarden bitwarden-cli
+
+echo "Bitwarden has been removed."
