@@ -48,13 +48,21 @@ custom_fastfetch_config() {
     listed=true
     directory=${directory% (\*)}
     [[ ${directory%/} == "$OMARCHY_FASTFETCH_DIR" ]] && return 1
-    [[ -f ${directory%/}/config.jsonc ]] && return 0
+    if [[ -f ${directory%/}/config.jsonc ]]; then
+      if grep -q "omarchy/branding/about.txt" "${directory%/}/config.jsonc" 2>/dev/null; then
+        return 1
+      fi
+      return 0
+    fi
   done < <(fastfetch --list-config-paths 2>/dev/null)
 
   # Silence is not the same answer as "none of them", so fall back to the
   # directory fastfetch has always looked in first rather than read it as one.
   [[ $listed == true ]] && return 1
-  [[ -f $HOME/.config/fastfetch/config.jsonc ]]
+  if [[ -f $HOME/.config/fastfetch/config.jsonc ]] && ! grep -q "omarchy/branding/about.txt" "$HOME/.config/fastfetch/config.jsonc" 2>/dev/null; then
+    return 0
+  fi
+  return 1
 }
 
 # wc -L counts display columns only in a UTF-8 locale. A session that never set
