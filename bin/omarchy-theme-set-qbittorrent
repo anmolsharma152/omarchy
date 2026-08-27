@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import os
 import sys
+import re
 
 CONF_PATH = os.path.expanduser("~/.config/qBittorrent/qBittorrent.conf")
 THEMES_DIR = os.path.expanduser("~/.config/qBittorrent/themes")
+COLORS_TOML = os.path.expanduser("~/.local/state/omarchy/current/theme/colors.toml")
 THEME_NAME_FILE = os.path.expanduser("~/.local/state/omarchy/current/theme.name")
 
 if len(sys.argv) > 1 and sys.argv[1]:
@@ -15,24 +17,36 @@ else:
     except Exception:
         theme_name = "catppuccin"
 
-THEME_MAP = {
-    "catppuccin": "catppuccin-mocha.qbtheme",
-    "catppuccin-latte": "catppuccin-latte.qbtheme",
-    "flexoki-light": "catppuccin-latte.qbtheme",
-    "white": "catppuccin-latte.qbtheme",
-    "rose-pine": "dracula.qbtheme",
-    "tokyo-night": "catppuccin-macchiato.qbtheme",
-    "kanagawa": "catppuccin-macchiato.qbtheme",
-    "everforest": "catppuccin-frappe.qbtheme",
-    "solitude": "catppuccin-frappe.qbtheme",
-    "gruvbox": "catppuccin-mocha.qbtheme",
-    "matte-black": "darkstylesheet.qbtheme",
-    "vantablack": "darkstylesheet.qbtheme",
-    "nord": "breeze-dark.qbtheme",
-    "hackerman": "darkstylesheet.qbtheme",
-}
+# 1. Inspect theme mode directly from Omarchy's colors.toml
+theme_mode = "dark"
+if os.path.exists(COLORS_TOML):
+    try:
+        with open(COLORS_TOML, "r", encoding="utf-8") as f:
+            content = f.read()
+            match = re.search(r'mode\s*=\s*["\'](light|dark)["\']', content)
+            if match:
+                theme_mode = match.group(1).lower()
+    except Exception:
+        pass
 
-theme_file = THEME_MAP.get(theme_name, "catppuccin-mocha.qbtheme")
+# 2. Select appropriate theme based on exact mode and palette
+if theme_mode == "light":
+    theme_file = "catppuccin-latte.qbtheme"
+else:
+    DARK_THEME_MAP = {
+        "catppuccin": "catppuccin-mocha.qbtheme",
+        "tokyo-night": "catppuccin-macchiato.qbtheme",
+        "kanagawa": "catppuccin-macchiato.qbtheme",
+        "everforest": "catppuccin-frappe.qbtheme",
+        "solitude": "catppuccin-frappe.qbtheme",
+        "gruvbox": "catppuccin-mocha.qbtheme",
+        "matte-black": "darkstylesheet.qbtheme",
+        "vantablack": "darkstylesheet.qbtheme",
+        "nord": "breeze-dark.qbtheme",
+        "hackerman": "darkstylesheet.qbtheme",
+    }
+    theme_file = DARK_THEME_MAP.get(theme_name, "catppuccin-mocha.qbtheme")
+
 theme_path = os.path.join(THEMES_DIR, theme_file)
 
 if not os.path.exists(CONF_PATH):
