@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+import os
+import sys
+
+CONF_PATH = os.path.expanduser("~/.config/qBittorrent/qBittorrent.conf")
+THEMES_DIR = os.path.expanduser("~/.config/qBittorrent/themes")
+THEME_NAME_FILE = os.path.expanduser("~/.local/state/omarchy/current/theme.name")
+
+if len(sys.argv) > 1 and sys.argv[1]:
+    theme_name = sys.argv[1]
+else:
+    try:
+        with open(THEME_NAME_FILE, "r") as f:
+            theme_name = f.read().strip()
+    except Exception:
+        theme_name = "catppuccin"
+
+LIGHT_THEMES = {"catppuccin-latte", "flexoki-light", "white"}
+theme_file = "mumble-lite.qbtheme" if theme_name in LIGHT_THEMES else "mumble-dark.qbtheme"
+theme_path = os.path.join(THEMES_DIR, theme_file)
+
+if not os.path.exists(CONF_PATH):
+    sys.exit(0)
+
+os.makedirs(THEMES_DIR, exist_ok=True)
+
+with open(CONF_PATH, "r", encoding="utf-8", errors="ignore") as f:
+    lines = f.readlines()
+
+new_lines = []
+in_preferences = False
+has_use_custom = False
+has_theme_path = False
+preferences_found = False
+
+for line in lines:
+    stripped = line.strip()
+    if stripped.startswith("[") and stripped.endswith("]"):
+        if in_preferences:
+            if not has_use_custom:
+                new_lines.append("General\\UseCustomUITheme=true\n")
+            if not has_theme_path:
+                new_lines.append(f"General\\CustomUIThemePath={theme_path}\n")
+        in_preferences = (stripped == "[Preferences]")
+        if in_preferences:
+            preferences_found = True
+
+    if in_preferences:
+        if stripped.startswith("General\\UseCustomUITheme="):
+            new_lines.append("General\\UseCustomUITheme=true\n")
+            has_use_custom = True
+            continue
+        elif stripped.startswith("General\\CustomUIThemePath="):
+            new_lines.append(f"General\\CustomUIThemePath={theme_path}\n")
+            has_theme_path = True
+            continue
+
+    new_lines.append(line)
+
+if in_preferences:
+    if not has_use_custom:
+        new_lines.append("General\\UseCustomUITheme=true\n")
+    if not has_theme_path:
+        new_lines.append(f"General\\CustomUIThemePath={theme_path}\n")
+
+if not preferences_found:
+    new_lines.append("\n[Preferences]\n")
+    new_lines.append("General\\UseCustomUITheme=true\n")
+    new_lines.append(f"General\\CustomUIThemePath={theme_path}\n")
+
+with open(CONF_PATH, "w", encoding="utf-8") as f:
+    f.writelines(new_lines)
