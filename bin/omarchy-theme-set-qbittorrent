@@ -17,30 +17,50 @@ else:
     except Exception:
         theme_name = "catppuccin"
 
-# 1. Inspect theme mode directly from Omarchy's colors.toml
+# 1. Inspect theme mode and background color directly from colors.toml
 theme_mode = "dark"
+bg_hex = ""
 if os.path.exists(COLORS_TOML):
     try:
         with open(COLORS_TOML, "r", encoding="utf-8") as f:
             content = f.read()
-            match = re.search(r'mode\s*=\s*["\'](light|dark)["\']', content)
-            if match:
-                theme_mode = match.group(1).lower()
+            match_mode = re.search(r'mode\s*=\s*["\'](light|dark)["\']', content)
+            if match_mode:
+                theme_mode = match_mode.group(1).lower()
+            match_bg = re.search(r'background\s*=\s*["\']#?([0-9a-fA-F]{6})["\']', content)
+            if match_bg:
+                bg_hex = match_bg.group(1).lower()
     except Exception:
         pass
 
-# 2. Comprehensive 23-Theme Exact Palette Mapping
-if theme_mode == "light":
-    # Catppuccin Latte, Flexoki Light, Lupine, Rose Pine Dawn, White
+# Check if background is inherently light (e.g. #d0d0c8, #faf4ed)
+if bg_hex:
+    try:
+        r, g, b = int(bg_hex[:2], 16), int(bg_hex[2:4], 16), int(bg_hex[4:], 16)
+        if (r * 299 + g * 587 + b * 114) / 1000 > 160:
+            theme_mode = "light"
+    except Exception:
+        pass
+
+# 2. Comprehensive 40-Theme Exact Palette Mapping
+PITCH_BLACK_THEMES = {
+    "vantablack", "matte-black", "solitude", "black_arch", "castle-on-a-lake",
+    "cpunk", "dos-moos", "ghost-pastel", "hackerman", "last-horizon",
+    "matrix", "ethereal", "retro-82", "futurist", "inkypinky"
+}
+
+FROST_SLATE_THEMES = {
+    "nord", "lumon", "osaka-jade", "japan-night", "evergarden"
+}
+
+if theme_mode == "light" or theme_name in ("thegreek", "rose-pine", "catppuccin-latte", "flexoki-light", "lupine", "white"):
     theme_file = "mumble-lite.qbtheme"
-elif theme_name in ("nord", "lumon", "osaka-jade"):
-    # Cold slate / frost themes
+elif theme_name in FROST_SLATE_THEMES:
     theme_file = "breeze-dark.qbtheme"
-elif theme_name in ("vantablack", "matte-black", "solitude", "hackerman", "last-horizon", "ethereal", "retro-82"):
-    # Pitch black / deep dark OLED themes
+elif theme_name in PITCH_BLACK_THEMES:
     theme_file = "darkstylesheet.qbtheme"
 else:
-    # Rich dark themes (Catppuccin Mocha, Tokyo Night, Everforest, Gruvbox, Kanagawa, Miasma, Ristretto)
+    # Rich dark themes: Catppuccin, Dracula, Fuchsblau, Batman, Biscuit De Mar, City 783, Event Horizon, Everforest, Gruvbox, Kanagawa, Mars, Miasma, Ristretto, Tokyo Night
     theme_file = "mumble-dark.qbtheme"
 
 theme_path = os.path.join(THEMES_DIR, theme_file)
