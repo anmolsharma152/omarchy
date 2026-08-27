@@ -6,16 +6,6 @@ import re
 CONF_PATH = os.path.expanduser("~/.config/qBittorrent/qBittorrent.conf")
 THEMES_DIR = os.path.expanduser("~/.config/qBittorrent/themes")
 COLORS_TOML = os.path.expanduser("~/.local/state/omarchy/current/theme/colors.toml")
-THEME_NAME_FILE = os.path.expanduser("~/.local/state/omarchy/current/theme.name")
-
-if len(sys.argv) > 1 and sys.argv[1]:
-    theme_name = sys.argv[1].strip().lower()
-else:
-    try:
-        with open(THEME_NAME_FILE, "r") as f:
-            theme_name = f.read().strip().lower()
-    except Exception:
-        theme_name = "catppuccin"
 
 # 1. Inspect theme mode directly from Omarchy's colors.toml
 theme_mode = "dark"
@@ -29,23 +19,11 @@ if os.path.exists(COLORS_TOML):
     except Exception:
         pass
 
-# 2. Select appropriate theme based on exact mode and palette
+# 2. Select full stylesheet themes
 if theme_mode == "light":
-    theme_file = "catppuccin-latte.qbtheme"
+    theme_file = "mumble-lite.qbtheme"
 else:
-    DARK_THEME_MAP = {
-        "catppuccin": "catppuccin-mocha.qbtheme",
-        "tokyo-night": "catppuccin-macchiato.qbtheme",
-        "kanagawa": "catppuccin-macchiato.qbtheme",
-        "everforest": "catppuccin-frappe.qbtheme",
-        "solitude": "catppuccin-frappe.qbtheme",
-        "gruvbox": "catppuccin-mocha.qbtheme",
-        "matte-black": "darkstylesheet.qbtheme",
-        "vantablack": "darkstylesheet.qbtheme",
-        "nord": "breeze-dark.qbtheme",
-        "hackerman": "darkstylesheet.qbtheme",
-    }
-    theme_file = DARK_THEME_MAP.get(theme_name, "catppuccin-mocha.qbtheme")
+    theme_file = "darkstylesheet.qbtheme"
 
 theme_path = os.path.join(THEMES_DIR, theme_file)
 
