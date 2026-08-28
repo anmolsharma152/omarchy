@@ -2,5 +2,7 @@
 
 # omarchy:summary=Returns true if the AUR is up and available.
 
-curl -sfL --connect-timeout 15 --retry 2 --retry-delay 2 -A "omarchy-update" \
-  "https://aur.archlinux.org" >/dev/null
+curl -sfL --connect-timeout 10 --retry 2 -A "Mozilla/5.0 (X11; Linux x86_64)" \
+  "https://aur.archlinux.org/rpc/v5/info?arg[]=base" >/dev/null 2>&1 || \
+curl -sfL --connect-timeout 10 -A "Mozilla/5.0 (X11; Linux x86_64)" \
+  "https://aur.archlinux.org" >/dev/null 2>&1

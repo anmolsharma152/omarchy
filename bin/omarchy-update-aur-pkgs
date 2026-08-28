@@ -2,13 +2,12 @@
 
 # omarchy:summary=Update AUR packages if any are installed
 
-if pacman -Qem >/dev/null; then
-  if omarchy-pkg-aur-accessible; then
-    echo -e "\e[32m\nUpdate AUR packages\e[0m"
-    yay -Sua --noconfirm --cleanafter --ignore gcc14,gcc14-libs
-    echo
-  else
-    echo -e "\e[31m\nAUR is unavailable (so skipping updates)\e[0m"
-    echo
+if pacman -Qem >/dev/null 2>&1; then
+  echo -e "\e[32m\nUpdate AUR packages\e[0m"
+  if ! yay -Sua --noconfirm --cleanafter --ignore gcc14,gcc14-libs; then
+    if ! omarchy-pkg-aur-accessible; then
+      echo -e "\e[31m\nAUR is currently unreachable (skipping)\e[0m"
+    fi
   fi
+  echo
 fi
