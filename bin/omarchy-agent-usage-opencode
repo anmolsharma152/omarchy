@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 import sqlite3, os, json
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 
 db_path = os.path.expanduser("~/.local/share/opencode/opencode.db")
-today_utc = datetime.now(timezone.utc)
-today_str = today_utc.strftime("%Y-%m-%d")
+now = datetime.now().astimezone()
+today_str = now.strftime("%Y-%m-%d")
 
 recent_days = {}
 for i in range(6, -1, -1):
-    d_str = (today_utc - timedelta(days=i)).strftime("%Y-%m-%d")
+    d_str = (now - timedelta(days=i)).strftime("%Y-%m-%d")
     recent_days[d_str] = 0
 
 today_tokens = 0
@@ -33,7 +33,7 @@ if os.path.exists(db_path):
                     m_name = "Big Pickle" if "pickle" in raw_id.lower() else raw_id
                 except:
                     pass
-            dt = datetime.fromtimestamp(time_created / 1000.0, timezone.utc)
+            dt = datetime.fromtimestamp(time_created / 1000.0).astimezone()
             d_key = dt.strftime("%Y-%m-%d")
             if d_key in recent_days:
                 recent_days[d_key] += t_total
@@ -50,14 +50,7 @@ if os.path.exists(db_path):
     except:
         pass
 
-if today_tokens == 0:
-    today_tokens = 145200
-    today_models["Big Pickle"] = 145200
-    today_prompts = 12
-    today_sessions = 2
-    recent_days[today_str] = today_tokens
-
-window_reset = (today_utc + timedelta(hours=2, minutes=15)).strftime("%Y-%m-%dT%H:%M:%S+00:00")
+window_reset = (now + timedelta(hours=2, minutes=14)).strftime("%Y-%m-%dT%H:%M:%S%z")
 
 record = {
     "schemaVersion": 1,
@@ -83,7 +76,7 @@ record = {
     },
     "limits": [
         {
-            "label": "4h free window",
+            "label": "Session",
             "percent": 0.15,
             "resetsAt": window_reset
         }

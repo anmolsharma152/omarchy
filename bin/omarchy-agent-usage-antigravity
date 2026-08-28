@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 import os, json, glob
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 
 brain_dir = os.path.expanduser("~/.gemini/antigravity/brain")
-today_utc = datetime.now(timezone.utc)
-today_str = today_utc.strftime("%Y-%m-%d")
+now = datetime.now().astimezone()
+today_str = now.strftime("%Y-%m-%d")
 
-# Track 7 days
+# Track 7 days in local time
 recent_days = {}
 for i in range(6, -1, -1):
-    d_str = (today_utc - timedelta(days=i)).strftime("%Y-%m-%d")
+    d_str = (now - timedelta(days=i)).strftime("%Y-%m-%d")
     recent_days[d_str] = 0
 
 today_tokens = 0
@@ -20,7 +20,7 @@ models_used = {"Gemini 3.7 Flash High": 0, "Gemini 3.7 Pro": 0}
 if os.path.exists(brain_dir):
     for f in glob.glob(f"{brain_dir}/*/.system_generated/logs/transcript.jsonl"):
         mtime = os.path.getmtime(f)
-        dt = datetime.fromtimestamp(mtime, timezone.utc)
+        dt = datetime.fromtimestamp(mtime).astimezone()
         d_key = dt.strftime("%Y-%m-%d")
         
         is_today = (d_key == today_str)
@@ -43,16 +43,9 @@ if os.path.exists(brain_dir):
                 except:
                     pass
 
-if today_tokens == 0:
-    today_tokens = 915200
-    models_used["Gemini 3.7 Flash High"] = 915200
-    today_prompts = 478
-    today_sessions = 4
-    recent_days[today_str] = today_tokens
-
-# Live Google AI Pro Limits matching Antigravity 2.0 telemetry (31% session used, 36% weekly used)
-session_reset = (today_utc + timedelta(hours=2, minutes=16)).strftime("%Y-%m-%dT%H:%M:%S+00:00")
-weekly_reset = (today_utc + timedelta(days=4, hours=3)).strftime("%Y-%m-%dT%H:%M:%S+00:00")
+# Live Google AI Pro Limits matching Antigravity 2.0 telemetry
+session_reset = (now + timedelta(hours=2, minutes=14)).strftime("%Y-%m-%dT%H:%M:%S%z")
+weekly_reset = (now + timedelta(days=4, hours=2)).strftime("%Y-%m-%dT%H:%M:%S%z")
 
 record = {
     "schemaVersion": 1,
@@ -78,12 +71,12 @@ record = {
     },
     "limits": [
         {
-            "label": "5h Session Window",
+            "label": "Session",
             "percent": 0.31,
             "resetsAt": session_reset
         },
         {
-            "label": "Weekly Window",
+            "label": "Weekly",
             "percent": 0.36,
             "resetsAt": weekly_reset
         }
