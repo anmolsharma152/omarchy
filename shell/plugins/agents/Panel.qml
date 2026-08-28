@@ -288,8 +288,11 @@ Panel {
   function iconCandidatesForProvider(p, surfaceColor) {
     if (!p) return []
     var candidates = []
-    if (colorLuminance(surfaceColor || Color.background) >= 0.5)
+    if (colorLuminance(surfaceColor || Color.background) >= 0.5) {
+      candidates.push(Qt.resolvedUrl("assets/" + p.providerId + "-light.png"))
       candidates.push(Qt.resolvedUrl("assets/" + p.providerId + "-light.svg"))
+    }
+    candidates.push(Qt.resolvedUrl("assets/" + p.providerId + ".png"))
     candidates.push(Qt.resolvedUrl("assets/" + p.providerId + ".svg"))
     return candidates
   }
