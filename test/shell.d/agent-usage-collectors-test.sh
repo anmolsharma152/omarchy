@@ -33,27 +33,34 @@ pass "Antigravity collector reports ready true"
 pass "Antigravity collector reports hasLocalStats true"
 
 
-# 2. Test OpenCode Collector
+# 2. Test OpenCode Collector with production message(id, session_id, time_created, time_updated, data) schema
 opencode_dir="$TEST_HOME/.local/share/opencode"
 mkdir -p "$opencode_dir"
 
-sqlite3 "$opencode_dir/opencode.db" <<'SQL'
-CREATE TABLE session (
-  id TEXT PRIMARY KEY,
-  model TEXT,
-  tokens_input INTEGER,
-  tokens_output INTEGER,
-  tokens_reasoning INTEGER,
-  tokens_cache_read INTEGER,
-  time_created INTEGER
-);
-CREATE TABLE message (
-  id TEXT PRIMARY KEY,
-  role TEXT
-);
-INSERT INTO session VALUES ('ses_1', '{"id":"big-pickle"}', 100, 50, 0, 0, strftime('%s', 'now') * 1000);
-INSERT INTO message VALUES ('msg_1', 'user');
-SQL
+python3 - "$opencode_dir/opencode.db" <<'PY'
+import json, sqlite3, sys, time
+from pathlib import Path
+
+db = Path(sys.argv[1])
+conn = sqlite3.connect(db)
+conn.execute("CREATE TABLE message (id text PRIMARY KEY, session_id text NOT NULL, time_created integer NOT NULL, time_updated integer NOT NULL, data text NOT NULL)")
+now_ms = int(time.time() * 1000)
+
+def msg(id, role, model, input=0, output=0, reasoning=0, read=0, write=0):
+    return (id, "ses_1", now_ms, now_ms, json.dumps({
+        "role": role,
+        "modelID": model,
+        "tokens": {"input": input, "output": output, "reasoning": reasoning, "cache": {"read": read, "write": write}},
+        "time": {"created": now_ms}
+    }))
+
+conn.executemany("INSERT INTO message VALUES (?, ?, ?, ?, ?)", [
+    msg("msg_1", "user", "big-pickle"),
+    msg("msg_2", "assistant", "big-pickle", input=100, output=50, reasoning=0, read=0, write=0),
+])
+conn.commit()
+conn.close()
+PY
 
 res_opencode=$(HOME="$TEST_HOME" "$ROOT/bin/omarchy-agent-usage-opencode")
 
@@ -66,5 +73,9 @@ pass "OpenCode collector returns id 'opencode'"
 pass "OpenCode collector reports ready true"
 
 [[ $(jq -r '.todayTotalTokens' <<<"$res_opencode") == "150" ]] ||
-  fail "OpenCode collector sums tokens from SQLite correctly" "$res_opencode"
-pass "OpenCode collector sums tokens from SQLite correctly"
+  fail "OpenCode collector sums tokens from SQLite message table correctly" "$res_opencode"
+pass "OpenCode collector sums tokens from SQLite message table correctly"
+
+[[ $(jq -r '.todayPrompts' <<<"$res_opencode") == "1" ]] ||
+  fail "OpenCode collector counts user prompts correctly" "$res_opencode"
+pass "OpenCode collector counts user prompts correctly"
