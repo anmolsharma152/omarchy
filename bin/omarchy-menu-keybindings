@@ -329,6 +329,7 @@ dynamic_bindings() {
 static_bindings() {
   echo "SHIFT ALT,L,Copy URL from Web App,sendshortcut,SHIFT ALT,L,"
   echo "SHIFT ALT,D,Download Video from Web App,sendshortcut,SHIFT ALT,D,"
+  echo ",RIGHT ALT,Compose symbols & accents (e.g. + c + o → ©),,"
 }
 
 # Actions Omarchy binds to a second chord meant as an alternative, named one at
