@@ -16,6 +16,7 @@ today_tokens = 0
 today_prompts = 0
 today_sessions = 0
 models_used = {}
+model_breakdown = {}
 
 five_hour_cutoff = now - timedelta(hours=5)
 weekly_cutoff = now - timedelta(days=7)
@@ -25,6 +26,7 @@ weekly_tokens = 0
 earliest_in_5h = now
 
 if os.path.exists(brain_dir):
+    import re
     for f in glob.glob(f"{brain_dir}/*/.system_generated/logs/transcript.jsonl"):
         mtime = os.path.getmtime(f)
         dt = datetime.fromtimestamp(mtime).astimezone()
@@ -34,10 +36,19 @@ if os.path.exists(brain_dir):
         if is_today:
             today_sessions += 1
 
+        current_model = "Gemini 3.7 Flash High"
         with open(f, "r", errors="ignore") as fp:
             for line in fp:
                 try:
                     obj = json.loads(line)
+                    content = obj.get("content", "") or ""
+
+                    # Detect model changes dynamically
+                    if "USER_SETTINGS_CHANGE" in content:
+                        match = re.search(r"Model Selection[`\s]+from\s+.*?to\s+([^\n\r]+?)(?:\.\s*No need|\.\s*$|$)", content)
+                        if match:
+                            current_model = re.sub(r"[\(\)]", "", match.group(1)).strip()
+
                     t_str = obj.get("created_at")
                     if t_str:
                         try:
@@ -50,9 +61,20 @@ if os.path.exists(brain_dir):
                     if is_today and obj.get("type") == "USER_INPUT":
                         today_prompts += 1
                     
-                    content = obj.get("content", "") or ""
                     tokens_est = max(1, len(content) // 4)
                     
+                    # Cumulative model breakdown
+                    if current_model not in model_breakdown:
+                        model_breakdown[current_model] = {
+                            "inputTokens": 0,
+                            "outputTokens": 0,
+                            "cacheReadInputTokens": 0,
+                            "cacheCreationInputTokens": 0
+                        }
+                    model_breakdown[current_model]["inputTokens"] += int(tokens_est * 0.7)
+                    model_breakdown[current_model]["outputTokens"] += int(tokens_est * 0.3)
+                    model_breakdown[current_model]["cacheReadInputTokens"] += int(tokens_est * 0.2)
+
                     # Aggregate by day
                     msg_d_key = msg_dt.strftime("%Y-%m-%d")
                     if msg_d_key in recent_days:
@@ -60,8 +82,7 @@ if os.path.exists(brain_dir):
                     
                     if msg_d_key == today_str:
                         today_tokens += tokens_est
-                        m_name = "Gemini 3.7 Flash High"
-                        models_used[m_name] = models_used.get(m_name, 0) + tokens_est
+                        models_used[current_model] = models_used.get(current_model, 0) + tokens_est
 
                     # Rolling 5h and 7d limits
                     if msg_dt >= five_hour_cutoff:
@@ -102,12 +123,12 @@ record = {
     "todayPrompts": today_prompts,
     "todaySessions": today_sessions,
     "todayTotalTokens": today_tokens,
-    "todayTokensByModel": models_used if models_used else {"Gemini 3.7 Flash High": today_tokens},
+    "todayTokensByModel": models_used if models_used else {"Gemini 3.8 Flash High": today_tokens},
     "recentDays": [{"date": k, "messageCount": v} for k, v in recent_days.items()],
     "activeDays": sum(1 for v in recent_days.values() if v > 0),
     "activeDates": [k for k, v in recent_days.items() if v > 0],
-    "modelUsage": {
-        "Gemini 3.7 Flash High": {
+    "modelUsage": model_breakdown if model_breakdown else {
+        "Gemini 3.8 Flash High": {
             "inputTokens": int(today_tokens * 0.7),
             "outputTokens": int(today_tokens * 0.3),
             "cacheReadInputTokens": int(today_tokens * 0.2),
