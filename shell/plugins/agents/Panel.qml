@@ -229,8 +229,17 @@ Panel {
     return peak
   }
 
+  readonly property double modelsPeakTotal: {
+    var peak = 1
+    for (var i = 0; i < models.length; i++) {
+      if (models[i].total > peak) peak = models[i].total
+    }
+    return peak
+  }
+
   function modelRows(p) {
     var usageByModel = p ? (p.modelUsage || {}) : {}
+    var todayByModel = p ? (p.todayTokensByModel || {}) : {}
     var rows = []
     for (var id in usageByModel) {
       var bucket = usageByModel[id] || {}
@@ -238,17 +247,25 @@ Panel {
       var output = Number(bucket.outputTokens || 0)
       var cacheRead = Number(bucket.cacheReadInputTokens || 0)
       var cacheWrite = Number(bucket.cacheCreationInputTokens || 0)
+      var todayTokens = Number(todayByModel[id] || 0)
       rows.push({
         name: usage.friendlyModelName(id),
         total: input + output + cacheRead + cacheWrite,
+        today: todayTokens,
         input: input,
         output: output,
         cacheRead: cacheRead,
         cacheWrite: cacheWrite
       })
     }
-    rows.sort(function(a, b) { return b.total - a.total })
-    return rows.slice(0, 4)
+    rows.sort(function(a, b) {
+      var aToday = Boolean(a.today > 0)
+      var bToday = Boolean(b.today > 0)
+      if (aToday !== bToday) return bToday - aToday
+      if (aToday && bToday && b.today !== a.today) return b.today - a.today
+      return b.total - a.total
+    })
+    return rows.slice(0, 8)
   }
 
   function modelTooltip(row) {
@@ -677,7 +694,7 @@ Panel {
                 row: modelData
                 // Scaled to the heaviest model, so the top row is always full —
                 // the same scale-to-peak the weekly chart uses for its busiest day.
-                share: modelData.total / Math.max(1, root.models[0].total)
+                share: modelData.total / Math.max(1, root.modelsPeakTotal)
               }
             }
           }
