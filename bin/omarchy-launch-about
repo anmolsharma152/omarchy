@@ -167,7 +167,7 @@ fit_window() {
   # logo and the module column: once the logo is the taller of the two, fastfetch
   # writes a row more than that arithmetic expects, and a window sized by it
   # scrolls the top padding away.
-  measure_layout || return 1
+  measure_layout || [[ -n ${LAYOUT_ROWS:-} && $LAYOUT_ROWS -gt 0 ]] || return 1
 
   # Mirror the logo block in the fastfetch config: padding left of
   # the logo, and between logo and modules. Then padding to
@@ -244,9 +244,9 @@ measure_layout() {
   IFS=$'\t' read -r offset needle < <(logo_landmark) || return 1
   [[ -n $needle ]] || return 1
 
-  plain=$(printf '%s' "$rendered" | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g')
+  plain=$(printf '%s' "$rendered" | sed -E 's/\x1b_G[^\x1b]*\x1b\\//g; s/\x1b\[[0-9;?]*[a-zA-Z]//g')
   found=$(printf '%s' "$plain" | LC_ALL=C.UTF-8 awk -v needle="$needle" \
-    'index($0, needle) { print NR, index($0, needle); exit }')
+    'index($0, needle) { print NR, index($0, needle); exit }' 2>/dev/null)
   [[ -n $found ]] || return 1
   read -r LOGO_ROW LOGO_COLUMN <<<"$found"
   LOGO_ROW=$(( LOGO_ROW - offset ))
