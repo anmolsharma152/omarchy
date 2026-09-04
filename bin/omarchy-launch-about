@@ -281,6 +281,16 @@ build_sheen() {
 
   custom_fastfetch_config && return 1
 
+  # The sheen animation only applies when the logo is about.txt.
+  local cfg="$HOME/.config/fastfetch/config.jsonc"
+  if [[ -f $cfg ]]; then
+    local logo_src
+    logo_src=$(jq -r '.logo.source // empty' "$cfg" 2>/dev/null)
+    if [[ -n $logo_src && $logo_src != *"about.txt"* ]]; then
+      return 1
+    fi
+  fi
+
   # fastfetch honours NO_COLOR when it writes to a terminal but not when it writes
   # to the measurement below, so a logo drawn without colour would be measured as
   # green and left green by the first glint. A glint is colour anyway, which is
