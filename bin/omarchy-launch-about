@@ -16,7 +16,7 @@ OMARCHY_FASTFETCH_DIR=/etc/fastfetch
 # size the window, and the sheen has to repaint the very cells fastfetch drew the
 # logo on, so both read the padding from here.
 LOGO_PAD_LEFT=2
-LOGO_PAD_TOP=2
+LOGO_PAD_TOP=3
 LOGO_PAD_RIGHT=6
 
 # The content is measured once and then goes on living: an uptime that turns
@@ -49,7 +49,7 @@ custom_fastfetch_config() {
     directory=${directory% (\*)}
     [[ ${directory%/} == "$OMARCHY_FASTFETCH_DIR" ]] && return 1
     if [[ -f ${directory%/}/config.jsonc ]]; then
-      if grep -q "omarchy/branding/about.txt" "${directory%/}/config.jsonc" 2>/dev/null; then
+      if grep -qE "omarchy/branding/about.txt|omarchy/themes" "${directory%/}/config.jsonc" 2>/dev/null; then
         return 1
       fi
       return 0
@@ -59,7 +59,7 @@ custom_fastfetch_config() {
   # Silence is not the same answer as "none of them", so fall back to the
   # directory fastfetch has always looked in first rather than read it as one.
   [[ $listed == true ]] && return 1
-  if [[ -f $HOME/.config/fastfetch/config.jsonc ]] && ! grep -q "omarchy/branding/about.txt" "$HOME/.config/fastfetch/config.jsonc" 2>/dev/null; then
+  if [[ -f $HOME/.config/fastfetch/config.jsonc ]] && ! grep -qE "omarchy/branding/about.txt|omarchy/themes" "$HOME/.config/fastfetch/config.jsonc" 2>/dev/null; then
     return 0
   fi
   return 1
@@ -73,6 +73,16 @@ display_columns() {
 }
 
 logo_dimensions() {
+  local cfg="$HOME/.config/fastfetch/config.jsonc"
+  if [[ -f $cfg ]]; then
+    local w h
+    w=$(jq -r '.logo.width // empty' "$cfg" 2>/dev/null)
+    h=$(jq -r '.logo.height // empty' "$cfg" 2>/dev/null)
+    if [[ -n $w && -n $h && $w =~ ^[0-9]+$ && $h =~ ^[0-9]+$ && $w -gt 0 && $h -gt 0 ]]; then
+      printf '%s %s' "$w" "$h"
+      return 0
+    fi
+  fi
   [[ -f $LOGO_FILE ]] || return 1
   printf '%s %s' "$(display_columns <"$LOGO_FILE")" "$(wc -l <"$LOGO_FILE")"
 }
@@ -159,10 +169,19 @@ fit_window() {
   # scrolls the top padding away.
   measure_layout || return 1
 
-  # Mirror the logo block in the fastfetch config: 2 columns of padding left of
-  # the logo, 6 between logo and modules. Then 2 columns of right padding to
+  # Mirror the logo block in the fastfetch config: padding left of
+  # the logo, and between logo and modules. Then padding to
   # match, a row for the cursor so the trailing break shows, and the spare above.
-  local target_c=$(( LOGO_PAD_LEFT + logo_w + LOGO_PAD_RIGHT + module_w + LOGO_PAD_LEFT + FIT_SPARE_COLUMNS ))
+  local cfg="$HOME/.config/fastfetch/config.jsonc"
+  local pad_l=$LOGO_PAD_LEFT pad_r=$LOGO_PAD_RIGHT
+  if [[ -f $cfg ]]; then
+    local cl cr
+    cl=$(jq -r '.logo.padding.left // empty' "$cfg" 2>/dev/null)
+    cr=$(jq -r '.logo.padding.right // empty' "$cfg" 2>/dev/null)
+    [[ -n $cl && $cl =~ ^[0-9]+$ ]] && pad_l=$cl
+    [[ -n $cr && $cr =~ ^[0-9]+$ ]] && pad_r=$cr
+  fi
+  local target_c=$(( pad_l + logo_w + pad_r + module_w + pad_l + FIT_SPARE_COLUMNS ))
   local target_r=$(( LAYOUT_ROWS + 1 + FIT_SPARE_ROWS ))
 
   local nudges=0 rows cols address width height shift_w shift_h target_w target_h
