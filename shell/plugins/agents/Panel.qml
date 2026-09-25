@@ -64,6 +64,30 @@ Panel {
     root.close()
   }
 
+  function launchCurrentProvider() {
+    if (!root.provider) {
+      launchAgent()
+      return
+    }
+    var id = String(root.provider.providerId || "")
+    if (id === "claude") {
+      if (String(root.provider.usageStatusText || "").toLowerCase().indexOf("auth") >= 0) {
+        if (root.bar) root.bar.run("omarchy-launch-agent claude auth login")
+      } else {
+        if (root.bar) root.bar.run("omarchy-launch-agent claude")
+      }
+    } else if (id === "antigravity") {
+      if (root.bar) root.bar.run("/home/omarchy/.local/bin/antigravity")
+    } else if (id === "codex") {
+      if (root.bar) root.bar.run("omarchy-launch-agent /home/omarchy/.local/bin/codex")
+    } else if (id === "opencode") {
+      if (root.bar) root.bar.run("omarchy-launch-agent /home/omarchy/.local/bin/opencode")
+    } else {
+      if (root.bar) root.bar.run("omarchy-launch-agent " + id)
+    }
+    root.close()
+  }
+
   // ---------------------------------------------------------------- limits
   //
   // Both providers report the same two shapes: a short rolling session window
@@ -463,6 +487,18 @@ Panel {
                 }
               }
             }
+
+            trailingControl: Component {
+              PanelActionButton {
+                visible: !!root.provider
+                iconText: root.provider && String(root.provider.providerId || "") === "antigravity" ? "󰍹" : ""
+                tooltipText: "Launch " + (root.provider ? root.provider.providerName : "Agent")
+                foreground: root.foreground
+                hoverColor: root.foreground
+                fontFamily: root.fontFamily
+                onClicked: root.launchCurrentProvider()
+              }
+            }
           }
 
           Text {
@@ -517,23 +553,41 @@ Panel {
           BorderSurface {
             visible: !!root.provider && String(root.provider.usageStatusText || "") !== ""
             width: parent.width
-            implicitHeight: statusText.implicitHeight + Style.spacing.xl * 2
+            implicitHeight: Math.max(statusText.implicitHeight, loginBtn.visible ? loginBtn.implicitHeight : 0) + Style.spacing.xl * 2
             color: root.alpha(root.urgent, 0.10)
             borderSpec: Border.flat(root.alpha(root.urgent, 0.35), 1)
             radius: Style.cornerRadius
 
-            Text {
-              id: statusText
-              anchors.left: parent.left
-              anchors.right: parent.right
-              anchors.verticalCenter: parent.verticalCenter
+            Item {
+              anchors.fill: parent
               anchors.leftMargin: Style.space(12)
               anchors.rightMargin: Style.space(12)
-              text: root.provider ? String(root.provider.authHelpText || "") : ""
-              color: root.dim
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.caption
-              wrapMode: Text.WordWrap
+
+              Text {
+                id: statusText
+                anchors.left: parent.left
+                anchors.right: loginBtn.visible ? loginBtn.left : parent.right
+                anchors.rightMargin: loginBtn.visible ? Style.space(10) : 0
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.provider ? String(root.provider.authHelpText || root.provider.usageStatusText || "") : ""
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                wrapMode: Text.WordWrap
+              }
+
+              Button {
+                id: loginBtn
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                visible: root.provider && String(root.provider.authHelpText || "").indexOf("login") >= 0
+                text: "Login"
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+                fontSize: Style.font.bodySmall
+                verticalPadding: Style.spacing.controlPaddingY
+                onClicked: root.launchCurrentProvider()
+              }
             }
           }
 

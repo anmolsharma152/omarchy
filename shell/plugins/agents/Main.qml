@@ -216,7 +216,10 @@ Item {
 
   // All-time keeps a quiet day from hiding an agent; today's counts admit a
   // machine whose only source is history.jsonl, which knows nothing older.
+  // Also keep agents visible if they are installed locally or require authentication.
   function providerHasData(p) {
+    if (!p) return false
+    if (p.hasLocalStats || p.ready || p.authHelpText || p.usageStatusText) return true
     return numberValue(p.totalPrompts) > 0 || numberValue(p.totalSessions) > 0
       || numberValue(p.activeDays) > 0 || numberValue(p.todayPrompts) > 0
       || numberValue(p.todaySessions) > 0 || (p.limits && p.limits.length > 0)
