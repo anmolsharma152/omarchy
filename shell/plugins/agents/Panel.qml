@@ -532,13 +532,15 @@ Panel {
                 required property int index
 
                 width: providerSwitch.cellWidth
-                text: modelData.providerName
+                text: modelData.providerName === "Claude Code" ? "Claude" : (modelData.providerName || modelData.providerId)
+                clip: true
                 selected: index === root.providerIndex
                 hasCursor: root.cursorActive && index === root.providerIndex
                 bordered: true
                 foreground: root.foreground
                 fontFamily: root.fontFamily
                 fontSize: Style.font.bodySmall
+                horizontalPadding: Style.space(4)
                 verticalPadding: Style.spacing.controlPaddingY
                 onClicked: {
                   root.cursorActive = true
