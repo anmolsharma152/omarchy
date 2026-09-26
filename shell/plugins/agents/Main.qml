@@ -216,11 +216,15 @@ Item {
 
   // All-time keeps a quiet day from hiding an agent; today's counts admit a
   // machine whose only source is history.jsonl, which knows nothing older.
-  // Keep local agents visible, but exclude unconfigured third-party providers like Fireworks.
+  // Keep active local agents visible, but exclude unconfigured or unauthenticated providers.
   function providerHasData(p) {
     if (!p) return false
     if (p.providerId === "fireworks") {
       return !!p.balance || numberValue(p.totalPrompts) > 0 || (p.limits && p.limits.length > 0)
+    }
+    if (p.providerId === "claude") {
+      // Hide Claude unless user actually connects and authenticates it
+      return p.ready === true && (numberValue(p.totalPrompts) > 0 || (p.limits && p.limits.length > 0))
     }
     if (p.hasLocalStats || p.ready) return true
     return numberValue(p.totalPrompts) > 0 || numberValue(p.totalSessions) > 0
