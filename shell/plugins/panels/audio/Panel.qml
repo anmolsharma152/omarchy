@@ -144,7 +144,7 @@ Panel {
   property bool volumeSetQueued: false
 
   onVolumeSinkNameChanged: {
-    volumeDebounceTimer.stop()
+    volumeThrottleTimer.stop()
     root.volumeSetQueued = false
     root.pendingOutputVolume = -1
     root.pendingVolumeSink = ""
@@ -154,7 +154,7 @@ Panel {
   // safety net for the tuning being applied or removed underneath us.
   onSinkChanged: {
     resolveVolumeSink()
-    volumeDebounceTimer.stop()
+    volumeThrottleTimer.stop()
     root.volumeSetQueued = false
     root.pendingOutputVolume = -1
     root.pendingVolumeSink = ""
@@ -445,6 +445,13 @@ Panel {
     return root.volumeSinkName || (root.volumeSink ? root.volumeSink.name : "")
   }
 
+  function clearPendingVolumeIfIdle() {
+    if (!root.volumeSetQueued && !setVolumeProc.running && !volumeThrottleTimer.running) {
+      root.pendingOutputVolume = -1
+      root.pendingVolumeSink = ""
+    }
+  }
+
   function dispatchPendingVolume() {
     if (!root.volumeSetQueued || setVolumeProc.running) return
     var targetSink = root.pendingVolumeSink
@@ -473,7 +480,12 @@ Panel {
     root.pendingOutputVolume = Math.round(volume * 100)
     root.pendingVolumeSink = root.currentTargetSinkName()
     root.volumeSetQueued = true
-    volumeDebounceTimer.restart()
+    if (!setVolumeProc.running && !volumeThrottleTimer.running) {
+      root.dispatchPendingVolume()
+      volumeThrottleTimer.start()
+    } else if (!volumeThrottleTimer.running) {
+      volumeThrottleTimer.start()
+    }
     return volume
   }
 
@@ -653,20 +665,27 @@ Panel {
     stdout: StdioCollector { waitForEnd: true }
     onRunningChanged: {
       if (running) return
-      if (root.volumeSetQueued && !volumeDebounceTimer.running) {
+      if (root.volumeSetQueued && !volumeThrottleTimer.running) {
         root.dispatchPendingVolume()
-      } else if (!root.volumeSetQueued && !volumeDebounceTimer.running) {
-        root.pendingOutputVolume = -1
-        root.pendingVolumeSink = ""
+        volumeThrottleTimer.start()
+      } else {
+        root.clearPendingVolumeIfIdle()
       }
     }
   }
 
   Timer {
-    id: volumeDebounceTimer
+    id: volumeThrottleTimer
     interval: 100
     repeat: false
-    onTriggered: root.dispatchPendingVolume()
+    onTriggered: {
+      if (root.volumeSetQueued) {
+        if (!setVolumeProc.running) {
+          root.dispatchPendingVolume()
+        }
+      }
+      root.clearPendingVolumeIfIdle()
+    }
   }
 
   Timer {
@@ -905,6 +924,13 @@ Panel {
                 enabled: !!root.sink
 
                 onMoved: function(v) { root.setOutputVolume(v) }
+                onReleased: function(v) {
+                  if (root.volumeSetQueued && !setVolumeProc.running) {
+                    volumeThrottleTimer.stop()
+                    root.dispatchPendingVolume()
+                  }
+                  root.clearPendingVolumeIfIdle()
+                }
                 onRightClicked: root.toggleOutputMute()
               }
 
